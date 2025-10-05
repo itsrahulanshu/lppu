@@ -100,6 +100,19 @@ class TimetableApp {
         try {
             const response = await fetch('/api/timetable');
             
+            // Handle 404 (no cache) gracefully
+            if (response.status === 404) {
+                console.log('📂 No cached data - user needs to refresh');
+                if (!isAutoRefresh) {
+                    this.hideLoadingScreen();
+                    // Show empty state with instruction to refresh
+                    this.timetableData = [];
+                    this.renderTimetable();
+                    this.updateStats();
+                }
+                return;
+            }
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -115,7 +128,7 @@ class TimetableApp {
                     this.updateLastUpdateTimeFromTimestamp(result.timestamp);
                 }
             } else {
-                throw new Error(result.message || 'Invalid response format');
+                throw new Error(result.error || result.message || 'Invalid response format');
             }
             
             // Only set today's filter on initial load, not auto refresh
@@ -602,6 +615,20 @@ class TimetableApp {
     }
 
     createEmptyState() {
+        // Check if there's any data at all
+        if (!this.timetableData || this.timetableData.length === 0) {
+            return `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎓</div>
+                    <h3>No Timetable Data</h3>
+                    <p>Click the refresh button (🔄) above to fetch your timetable.</p>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        First load may take 15-20 seconds while we authenticate and fetch your schedule.
+                    </p>
+                </div>
+            `;
+        }
+        
         return `
             <div class="empty-state">
                 <div class="empty-state-icon">📅</div>
