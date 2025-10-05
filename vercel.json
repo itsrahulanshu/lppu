@@ -2,43 +2,20 @@
   "version": 2,
   "name": "lpu-timetable",
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/public/assets/$1"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/public/manifest.json"
-    },
-    {
-      "src": "/OneSignalSDKWorker.js",
-      "dest": "/public/OneSignalSDKWorker.js"
-    },
-    {
-      "src": "/sw.js",
-      "dest": "/public/sw.js"
-    },
-    {
-      "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|css|js))",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    }
+    {"src": "/api/status", "dest": "/api/status.js"},
+    {"src": "/api/timetable", "dest": "/api/timetable.js"},
+    {"src": "/api/refresh", "dest": "/api/refresh.js"},
+    {"src": "/assets/(.*)", "dest": "/public/assets/$1"},
+    {"src": "/manifest.json", "dest": "/public/manifest.json"},
+    {"src": "/OneSignalSDKWorker.js", "dest": "/public/OneSignalSDKWorker.js"},
+    {"src": "/sw.js", "dest": "/public/sw.js"},
+    {"src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|css|js))", "dest": "/public/$1"},
+    {"src": "/(.*)", "dest": "/api/index.js"}
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "functions": {
-    "api/index.js": {
+    "api/**/*.js": {
       "memory": 1024,
       "maxDuration": 60
     }
-  },
-  "regions": ["iad1"]
+  }
 }
