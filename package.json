@@ -1,0 +1,34 @@
+{
+  "name": "lpu-timetable",
+  "version": "1.0.0",
+  "description": "A Node.js application to fetch student timetable data from LPU (Lovely Professional University)",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js",
+    "setup": "node scripts/setup-env.js",
+    "build": "echo 'Build process not required for this project'",
+    "test": "echo 'No tests specified'",
+    "vercel-build": "echo 'No build required - serverless ready'"
+  },
+  "dependencies": {
+    "@antiadmin/anticaptchaofficial": "^1.0.53",
+    "axios": "^1.6.0",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "lpu",
+    "timetable",
+    "student",
+    "university",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
