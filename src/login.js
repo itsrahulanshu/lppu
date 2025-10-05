@@ -14,6 +14,11 @@ const ac = require('@antiadmin/anticaptchaofficial');
 // Load environment variables
 require('dotenv').config();
 
+// Detect Vercel environment
+const isVercel = process.env.VERCEL === '1';
+const tempDir = isVercel ? '/tmp' : path.join(__dirname, '..', 'temp');
+const dataDir = isVercel ? '/tmp' : path.join(__dirname, 'data');
+
 // Configuration constants
 const CONFIG = {
     antiCaptcha: {
@@ -31,11 +36,11 @@ const CONFIG = {
     },
     debug: {
         saveCaptchaImage: process.env.SAVE_CAPTCHA_IMAGES === 'true',
-        captchaImagePath: path.join(__dirname, '..', 'temp', 'captcha_debug.png')
+        captchaImagePath: path.join(tempDir, 'captcha_debug.png')
     },
     cookies: {
         saveSessionCookies: process.env.SAVE_SESSION_COOKIES !== 'false',
-        cookieFile: path.join(__dirname, 'data', 'session_cookies.json')
+        cookieFile: path.join(dataDir, 'session_cookies.json')
     },
     urls: {
         loginPage: 'https://ums.lpu.in/lpuums/LoginNew.aspx',

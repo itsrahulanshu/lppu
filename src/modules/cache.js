@@ -1,12 +1,20 @@
 const fs = require('fs').promises;
+const path = require('path');
 
 class CacheManager {
     constructor() {
-        this.CACHE_FILE = process.env.CACHE_FILE || './src/data/timetable_cache.json';
-        this.PREVIOUS_TIMETABLE_FILE = './src/data/previous_timetable.json';
+        // Use /tmp directory for Vercel serverless, local path for development
+        const isVercel = process.env.VERCEL === '1';
+        const baseDir = isVercel ? '/tmp' : './src/data';
+        
+        this.CACHE_FILE = path.join(baseDir, 'timetable_cache.json');
+        this.PREVIOUS_TIMETABLE_FILE = path.join(baseDir, 'previous_timetable.json');
         this.lastCacheUpdate = null;
         this.lastTimetableData = null;
         this.verbose = process.env.VERBOSE_LOGS === 'true';
+        
+        // In-memory cache for Vercel
+        this.memoryCache = null;
     }
 
     async saveTimetableCache(data, sessionCookies, isManualRefresh = false) {
@@ -19,8 +27,17 @@ class CacheManager {
                 hasSessionCookies: !!sessionCookies
             };
             
-            await fs.writeFile(this.CACHE_FILE, JSON.stringify(cacheData, null, 2));
-            this.lastCacheUpdate = Date.now();
+            // Save to memory cache for Vercel
+            this.memoryCache = cacheData;
+            
+            // Try to save to file system (works in /tmp on Vercel)
+            try {
+                await fs.writeFile(this.CACHE_FILE, JSON.stringify(cacheData, null, 2));
+                this.lastCacheUpdate = Date.now();
+            } catch (fsError) {
+                // File write failed, but we have memory cache
+                if (this.verbose) console.log('⚠️ File cache unavailable, using memory cache');
+            }
             
             if (this.verbose) console.log(`💾 Cached ${data.length} classes${isManualRefresh ? ' (manual refresh)' : ''}`);
         } catch (error) {
@@ -30,11 +47,23 @@ class CacheManager {
 
     async loadTimetableCache() {
         try {
+            // First try memory cache (for Vercel)
+            if (this.memoryCache && this.memoryCache.data) {
+                const timeSinceUpdate = Date.now() - this.memoryCache.lastUpdate;
+                const minutesSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60));
+                
+                if (this.verbose) console.log(`📂 Memory cache loaded (${minutesSinceUpdate}m old, ${this.memoryCache.classCount} classes)`);
+                
+                return this.memoryCache;
+            }
+            
+            // Try file cache
             const cacheContent = await fs.readFile(this.CACHE_FILE, 'utf8');
             const cacheData = JSON.parse(cacheContent);
             
             if (cacheData && cacheData.data) {
                 this.lastCacheUpdate = cacheData.lastUpdate || 0;
+                this.memoryCache = cacheData; // Update memory cache
                 const timeSinceUpdate = Date.now() - this.lastCacheUpdate;
                 const minutesSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60));
                 

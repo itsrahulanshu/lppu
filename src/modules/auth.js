@@ -1,9 +1,17 @@
 const fs = require('fs').promises;
+const path = require('path');
 
 class AuthManager {
     constructor() {
         this.sessionCookies = null;
-        this.SESSION_FILE = './src/data/session_cookies.json';
+        
+        // Use /tmp directory for Vercel serverless, local path for development
+        const isVercel = process.env.VERCEL === '1';
+        const baseDir = isVercel ? '/tmp' : './src/data';
+        this.SESSION_FILE = path.join(baseDir, 'session_cookies.json');
+        
+        // In-memory session for Vercel
+        this.memorySession = null;
     }
 
     async saveSessionData() {
@@ -30,8 +38,16 @@ class AuthManager {
             sessionData.timestamp = new Date().toISOString();
             sessionData.loginSuccess = !!this.sessionCookies;
             
-            await fs.writeFile(this.SESSION_FILE, JSON.stringify(sessionData, null, 2));
-            console.log('💾 Session saved');
+            // Save to memory for Vercel
+            this.memorySession = sessionData;
+            
+            // Try to save to file
+            try {
+                await fs.writeFile(this.SESSION_FILE, JSON.stringify(sessionData, null, 2));
+                console.log('💾 Session saved');
+            } catch (fsError) {
+                console.log('💾 Session saved to memory (file unavailable)');
+            }
         } catch (error) {
             console.error('❌ Error saving session data:', error.message);
         }
@@ -39,6 +55,25 @@ class AuthManager {
 
     async loadSessionData() {
         try {
+            // First try memory session (for Vercel)
+            if (this.memorySession && this.memorySession.cookies && this.memorySession.loginSuccess) {
+                const sessionTime = new Date(this.memorySession.timestamp);
+                const timeSinceUpdate = Date.now() - sessionTime.getTime();
+                const hoursSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60 * 60));
+                
+                // Check if session is older than 30 minutes (likely expired)
+                if (timeSinceUpdate > 30 * 60 * 1000) {
+                    console.log(`📂 Memory session expired (${hoursSinceUpdate}h old), clearing...`);
+                    this.memorySession = null;
+                    return false;
+                }
+                
+                this.sessionCookies = this.memorySession.cookies;
+                console.log(`📂 Memory session loaded (${hoursSinceUpdate}h old)`);
+                return true;
+            }
+            
+            // Try file session
             const sessionContent = await fs.readFile(this.SESSION_FILE, 'utf8');
             const sessionData = JSON.parse(sessionContent);
             
@@ -55,6 +90,7 @@ class AuthManager {
                 }
                 
                 this.sessionCookies = sessionData.cookies;
+                this.memorySession = sessionData; // Update memory
                 
                 console.log(`📂 Session loaded (${hoursSinceUpdate}h old)`);
                 
@@ -70,6 +106,7 @@ class AuthManager {
 
     async clearSessionData() {
         this.sessionCookies = null;
+        this.memorySession = null;
         
         // Also delete the session file to prevent reloading expired session
         try {
