@@ -24,12 +24,13 @@ class TimetableApp {
         // Check current class every minute
         setInterval(() => this.checkCurrentClass(), 60000);
         
-        // Auto refresh every 10 seconds
+        // Update "last updated" time every minute
+        setInterval(() => this.updateLastUpdateTime(), 60000);
+        
+        // Auto refresh cached data every 10 seconds (just loads from cache)
         this.autoRefreshInterval = setInterval(() => {
             this.refreshTimetable(true); // true = silent auto refresh
         }, 10000);
-        
-        // Last update time will be updated when API is called
     }
 
     bindEvents() {
@@ -197,6 +198,18 @@ class TimetableApp {
                 });
                 
                 const result = await response.json();
+                
+                // Handle rate limit (429 status)
+                if (response.status === 429 && result.rateLimited) {
+                    const { minutes, seconds } = result.remainingTime;
+                    const timeMessage = minutes > 0 
+                        ? `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`
+                        : `${seconds} second${seconds !== 1 ? 's' : ''}`;
+                    
+                    this.showRateLimitNotification(timeMessage, result.remainingTime.totalSeconds);
+                    console.log(`⏱️ Rate limited: ${timeMessage} remaining`);
+                    return;
+                }
                 
                 if (!response.ok) {
                     throw new Error(result.message || 'Failed to refresh timetable');
@@ -841,6 +854,64 @@ class TimetableApp {
         existingNotifications.forEach(notification => {
             notification.remove();
         });
+    }
+
+    showRateLimitNotification(timeMessage, totalSeconds) {
+        // Remove any existing notifications
+        this.removeExistingNotifications();
+        
+        const notification = document.createElement('div');
+        notification.className = 'update-notification rate-limit-notification';
+        notification.innerHTML = `
+            <div class="update-content">
+                <div class="update-icon">⏱️</div>
+                <div class="update-text">
+                    <div class="update-title">⚠️ Please Wait</div>
+                    <div class="update-message">You can refresh again in <strong id="countdown">${timeMessage}</strong></div>
+                </div>
+                <button class="update-close" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Countdown timer
+        let remainingSeconds = totalSeconds;
+        const countdownInterval = setInterval(() => {
+            remainingSeconds--;
+            
+            if (remainingSeconds <= 0) {
+                clearInterval(countdownInterval);
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+                return;
+            }
+            
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            // Format time nicely
+            let timeText;
+            if (minutes > 0) {
+                timeText = `${minutes}:${seconds.toString().padStart(2, '0')} min`;
+            } else {
+                timeText = `${seconds} sec`;
+            }
+            
+            const countdownElement = notification.querySelector('#countdown');
+            if (countdownElement) {
+                countdownElement.textContent = timeText;
+            }
+        }, 1000);
+        
+        // Auto remove after countdown + 2 seconds
+        setTimeout(() => {
+            clearInterval(countdownInterval);
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, (totalSeconds + 2) * 1000);
     }
 
     updateLastUpdateTimeFromTimestamp(timestamp) {

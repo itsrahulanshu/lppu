@@ -1248,6 +1248,54 @@ body {
     box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
 }
 
+.update-notification.rate-limit-notification {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.rate-limit-notification .update-icon {
+    font-size: 28px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.15); 
+        opacity: 0.85; 
+    }
+}
+
+.rate-limit-notification .update-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.rate-limit-notification .update-message {
+    font-size: 14px;
+    opacity: 0.95;
+    margin-top: 2px;
+}
+
+.rate-limit-notification #countdown {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    min-width: 60px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
 .update-content {
     display: flex;
     align-items: center;
@@ -1326,6 +1374,17 @@ body {
     background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
 }
 
+.dark-mode .update-notification.rate-limit-notification {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    box-shadow: 0 10px 30px rgba(234, 88, 12, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .rate-limit-notification #countdown {
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+}
+
 /* Mobile responsive */
 @media (max-width: 480px) {
     .update-notification {
@@ -1338,17 +1397,28 @@ body {
     }
     
     .update-content {
-        padding: 12px 16px;
+        padding: 14px 16px;
         gap: 10px;
     }
     
     .update-icon {
-        font-size: 20px;
+        font-size: 22px;
     }
     
     .update-title {
         font-size: 15px;
     }
+    
+    .rate-limit-notification .update-icon {
+        font-size: 24px;
+    }
+    
+    .rate-limit-notification #countdown {
+        font-size: 14px;
+        padding: 2px 6px;
+        min-width: 50px;
+    }
+
     
     .update-message {
         font-size: 13px;

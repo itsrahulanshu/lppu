@@ -68,15 +68,18 @@ temp/
 # Cache and data files (will be regenerated)
 src/data/*.json
 src/data/*.txt
+!src/data/.gitkeep
 
 # Backup files
+*.backup
+*.bak
 *.zip
 *-backup.zip
 *backup.zip
-*.bak
 
 # Vercel
 .vercel
+.vercel-trigger
 
 # Debug
 debug.log

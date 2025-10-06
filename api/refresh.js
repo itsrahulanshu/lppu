@@ -33,6 +33,40 @@ const handler = async (req, res) => {
     
     const managers = getManagers();
     
+    // Check rate limit: 10 minutes between refreshes
+    const cacheData = await managers.cacheManager.loadTimetableCache();
+    if (cacheData && (cacheData.lastUpdate || cacheData.timestamp)) {
+      // Use lastUpdate (milliseconds) for accurate rate limiting, fallback to timestamp
+      const lastUpdateMs = cacheData.lastUpdate || new Date(cacheData.timestamp).getTime();
+      const now = Date.now();
+      const diffMs = now - lastUpdateMs;
+      const diffMinutes = Math.floor(diffMs / 60000);
+      const RATE_LIMIT_MINUTES = 10;
+      
+      console.log(`📊 Last update was ${diffMinutes} minutes ago (${new Date(lastUpdateMs).toISOString()})`);
+      
+      if (diffMinutes < RATE_LIMIT_MINUTES) {
+        const remainingMs = (RATE_LIMIT_MINUTES * 60000) - diffMs;
+        const remainingMinutes = Math.floor(remainingMs / 60000);
+        const remainingSeconds = Math.floor((remainingMs % 60000) / 1000);
+        
+        console.log(`⏱️ Rate limit: ${remainingMinutes} min ${remainingSeconds} sec remaining`);
+        
+        return res.status(429).json({
+          success: false,
+          rateLimited: true,
+          message: `Please wait ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''} before refreshing again`,
+          remainingTime: {
+            minutes: remainingMinutes,
+            seconds: remainingSeconds,
+            totalSeconds: Math.floor(remainingMs / 1000)
+          },
+          lastUpdated: new Date(lastUpdateMs).toISOString(),
+          nextRefreshAllowed: new Date(lastUpdateMs + (RATE_LIMIT_MINUTES * 60000)).toISOString()
+        });
+      }
+    }
+    
     // Fetch fresh data
     const freshData = await managers.timetableManager.fetchFreshTimetableData();
     console.log(`✅ Fetched ${freshData.length} classes`);

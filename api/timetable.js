@@ -45,11 +45,14 @@ const handler = async (req, res) => {
       timetableManager.processClassItem(classItem)
     );
     
+    // Use the original cache timestamp, don't create a new one!
+    const cacheTimestamp = cacheData.timestamp || new Date(cacheData.lastUpdate || Date.now()).toISOString();
+    
     res.status(200).json({ 
       success: true, 
       data: processedData, 
       cached: true,
-      timestamp: cacheData.timestamp || new Date().toISOString(),
+      timestamp: cacheTimestamp,
       classCount: processedData.length
     });
   } catch (error) {
